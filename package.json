@@ -1,0 +1,44 @@
+{
+  "name": "rn-bridgee-ai-sdk",
+  "version": "0.0.1",
+  "description": "React Native Bridge AI SDK",
+  "react-native": "js/index",
+  "source": "js/index",
+  "main": "js/index",
+  "files": [
+    "js",
+    "android",
+    "ios",
+    "rn-bridgee-ai-sdk.podspec",
+    "!android/build",
+    "!ios/build",
+    "!**/__tests__",
+    "!**/__fixtures__",
+    "!**/__mocks__"
+  ],
+  "keywords": [
+    "react-native",
+    "ios",
+    "android"
+  ],
+  "repository": "https://github.com/Levils114/rn-bridgee-ai-sdk",
+  "author": "Levi_Siebra levils114@gmail.com (https://github.com/Levils114)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Levils114/rn-bridgee-ai-sdk/issues"
+  },
+  "homepage": "https://github.com/Levils114/rn-bridgee-ai-sdk#readme",
+  "devDependencies": {},
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*"
+  },
+  "codegenConfig": {
+    "name": "RNBridgeeAiSDKSpec",
+    "type": "modules",
+    "jsSrcsDir": "js",
+    "android": {
+      "javaPackageName": "com.rnbridgeeaisdk"
+    }
+  }
+}
