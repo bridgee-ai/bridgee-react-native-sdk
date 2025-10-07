@@ -44,24 +44,7 @@ public class BridgeeAiModule extends NativeRNBridgeeAiSDKSpec {
 
     private void initializeFirebaseAnalytics() {
         try {
-            // Verifica todas as instâncias do Firebase disponíveis
-            List<FirebaseApp> apps = FirebaseApp.getApps(getReactApplicationContext());
-            Log.d(TAG, "Firebase Apps encontrados: " + apps.size());
-            
-            for (FirebaseApp app : apps) {
-                Log.d(TAG, "Firebase App: " + app.getName());
-                Log.d(TAG, "Firebase Project ID: " + app.getOptions().getProjectId());
-                Log.d(TAG, "Firebase App ID: " + app.getOptions().getApplicationId());
-            }
-            
-            // Pega a instância padrão
-            FirebaseApp defaultApp = FirebaseApp.getInstance();
-            Log.d(TAG, "Default App Project ID: " + defaultApp.getOptions().getProjectId());
-            
-            // Inicializa o Analytics
             this.firebaseAnalytics = FirebaseAnalytics.getInstance(getReactApplicationContext());
-            Log.d(TAG, "Firebase Analytics inicializado com sucesso");
-            
         } catch (IllegalStateException e) {
             Log.e(TAG, "Erro ao inicializar Firebase: " + e.getMessage());
             throw new IllegalStateException(
@@ -72,10 +55,10 @@ public class BridgeeAiModule extends NativeRNBridgeeAiSDKSpec {
     }
 
     @Override
-    public void initializeBridgeeSDK(String logEvent,String apiKey, String secretKey, Promise promise) {
+    public void initializeBridgeeSDK(String apiKey, String secretKey, Promise promise) {
       try {
         if (this.firebaseAnalytics == null) {
-            initializeFirebaseAnalytics();
+          initializeFirebaseAnalytics();
         }
 
         BridgeeFirebaseAnalyticsProvider analyticsProvider = new BridgeeFirebaseAnalyticsProvider(firebaseAnalytics);
@@ -84,13 +67,8 @@ public class BridgeeAiModule extends NativeRNBridgeeAiSDKSpec {
 
         // Check if this is the first app launch
         if (isFirstLaunch()) {
-            Bundle params = new Bundle();
-            params.putString("source", "react_native");
-
             MatchBundle matchBundle = new MatchBundle();
-
-            // Execute first_open event
-            bridgeeSdk.logEvent(logEvent, params, matchBundle);
+            bridgeeSdk.firstOpen(matchBundle);
 
             // Mark that first launch has been completed
             markFirstLaunchCompleted();

@@ -1,6 +1,6 @@
 {
   "name": "rn-bridgee-ai-sdk",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "description": "React Native Bridge AI SDK",
   "react-native": "js/index",
   "source": "js/index",

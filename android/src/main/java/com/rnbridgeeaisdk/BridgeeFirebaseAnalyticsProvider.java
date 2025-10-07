@@ -21,4 +21,9 @@ public class BridgeeFirebaseAnalyticsProvider implements AnalyticsProvider {
   public void logEvent(String name, Bundle params) {
     analytics.logEvent(name, params);
   }
+
+  @Override
+  public void setUserProperty(String name, String value){
+    analytics.setUserProperty(name, value);
+  };
 }
