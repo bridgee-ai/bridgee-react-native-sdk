@@ -39,6 +39,11 @@
     "jsSrcsDir": "js",
     "android": {
       "javaPackageName": "com.rnbridgeeaisdk"
+    },
+    "ios": {
+      "modulesProvider": {
+        "RNBridgeeAiSDK": "RNBridgeeAiSDK"
+      }
     }
   }
 }

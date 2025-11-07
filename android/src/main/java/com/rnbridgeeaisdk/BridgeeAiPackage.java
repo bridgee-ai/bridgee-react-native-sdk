@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class BridgeeAiPackage extends BaseReactPackage {
-
   @Nullable
   @Override
   public NativeModule getModule(String name, ReactApplicationContext reactContext) {

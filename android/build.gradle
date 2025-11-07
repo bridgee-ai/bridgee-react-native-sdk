@@ -30,5 +30,5 @@ dependencies {
   implementation(platform("com.google.firebase:firebase-bom:34.2.0"))
   implementation("com.google.firebase:firebase-analytics")
 
-  implementation 'ai.bridgee:bridgee-android-sdk:2.1.0'
+  implementation 'ai.bridgee:bridgee-android-sdk:2.3.0'
 }
