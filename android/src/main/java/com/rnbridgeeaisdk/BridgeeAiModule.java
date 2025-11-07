@@ -19,6 +19,7 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.WritableNativeMap;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -73,8 +74,14 @@ public class BridgeeAiModule extends NativeRNBridgeeAiSDKSpec {
           @Override
           public void ok(MatchResponse response) {
             markFirstLaunchCompleted();
-            
-            promise.resolve(response);
+
+            WritableNativeMap responseFormatted = new WritableNativeMap();
+
+            responseFormatted.putString("utm_source", response.getUtmSource());
+            responseFormatted.putString("utm_medium", response.getUtmMedium());
+            responseFormatted.putString("utm_campaign", response.getUtmCampaign());
+
+            promise.resolve(responseFormatted);
           }
 
           @Override
