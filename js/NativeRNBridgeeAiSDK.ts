@@ -1,9 +1,9 @@
 import { TurboModule, TurboModuleRegistry } from "react-native";
 
 interface InitializeBridgeeSdkResponse {
-  utmSource: string;
-  utmMedium: string;
-  utmCampaign: string;
+  utm_source: string;
+  utm_medium: string;
+  utm_campaign: string;
 }
 
 export interface Spec extends TurboModule {
