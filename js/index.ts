@@ -1,3 +1,6 @@
-import NativeRNBridgeeAiSDK from "./NativeRNBridgeeAiSDK";
+import { InitializeBridgeeSdkResponse, RNBridgeeAiSDK } from "./NativeRNBridgeeAiSDK";
 
-export default NativeRNBridgeeAiSDK;
+export {
+  InitializeBridgeeSdkResponse,
+  RNBridgeeAiSDK
+};

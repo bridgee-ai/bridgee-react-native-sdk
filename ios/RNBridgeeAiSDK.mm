@@ -1,5 +1,5 @@
 #import "RNBridgeeAiSDK.h"
-#import <BridgeeSDK/BridgeeSDK-Swift.h>
+#import <BridgeeAiSDK/BridgeeAiSDK-Swift.h>
 #import <FirebaseAnalytics/FirebaseAnalytics.h>
 #import "Firebase.h"
 

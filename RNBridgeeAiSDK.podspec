@@ -17,7 +17,7 @@ Pod::Spec.new do |s|
   # Configuração Swift
   s.swift_version = "5.5"
   
-  s.dependency "BridgeeSDK", '= 1.0.6'
+  s.dependency "BridgeeAiSDK", '= 1.1.1'
   s.dependency "FirebaseAnalytics"
   s.dependency "Firebase/Core"
   
