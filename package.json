@@ -1,6 +1,6 @@
 {
   "name": "rn-bridgee-ai-sdk",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "React Native Bridge AI SDK",
   "react-native": "js/index",
   "source": "js/index",
@@ -9,7 +9,7 @@
     "js",
     "android",
     "ios",
-    "rn-bridgee-ai-sdk.podspec",
+    "RNBridgeeAiSDK.podspec",
     "!android/build",
     "!ios/build",
     "!**/__tests__",
