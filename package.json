@@ -1,0 +1,83 @@
+{
+  "name": "@bridgee-ai/react-native-sdk",
+  "version": "0.1.0",
+  "description": "Bridgee attribution SDK for React Native — wraps the native Android and iOS SDKs.",
+  "main": "lib/commonjs/index.js",
+  "module": "lib/module/index.js",
+  "types": "lib/typescript/index.d.ts",
+  "source": "src/index.ts",
+  "react-native": "src/index.ts",
+  "files": [
+    "src",
+    "lib",
+    "android",
+    "ios",
+    "plugin/build",
+    "app.plugin.js",
+    "BridgeeReactNativeSdk.podspec",
+    "README.md",
+    "PUBLISHING.md",
+    "LICENSE",
+    "!**/.*",
+    "!**/__tests__",
+    "!**/__fixtures__",
+    "!**/__mocks__"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build:plugin": "tsc -p plugin/tsconfig.json",
+    "build:lib": "bob build",
+    "prepare": "npm run build:plugin && npm run build:lib",
+    "clean": "rm -rf lib plugin/build"
+  },
+  "keywords": [
+    "react-native",
+    "bridgee",
+    "attribution",
+    "utm",
+    "analytics",
+    "firebase"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bridgee-ai/bridgee-react-native-sdk.git"
+  },
+  "author": "Bridgee.ai <contato@bridgee.ai>",
+  "license": "MIT",
+  "homepage": "https://github.com/bridgee-ai/bridgee-react-native-sdk",
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*",
+    "@react-native-firebase/analytics": ">=18.0.0",
+    "expo": ">=49.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@react-native-firebase/analytics": { "optional": true },
+    "expo": { "optional": true }
+  },
+  "devDependencies": {
+    "@expo/config-plugins": "^8.0.0",
+    "@types/react": "^18.2.0",
+    "react": "18.2.0",
+    "react-native": "0.74.0",
+    "react-native-builder-bob": "^0.23.2",
+    "typescript": "^5.3.0"
+  },
+  "react-native-builder-bob": {
+    "source": "src",
+    "output": "lib",
+    "targets": [
+      ["commonjs", { "esm": true }],
+      ["module", { "esm": true }],
+      ["typescript", { "project": "tsconfig.build.json", "esm": true }]
+    ]
+  },
+  "codegenConfig": {
+    "name": "RNBridgeeSdkSpec",
+    "type": "modules",
+    "jsSrcsDir": "src",
+    "android": {
+      "javaPackageName": "ai.bridgee.reactnative"
+    }
+  }
+}

@@ -1,0 +1,29 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+.yarn/
+.pnp.*
+
+# Build outputs
+lib/
+plugin/build/
+*.tsbuildinfo
+
+# Android
+android/build/
+android/.gradle/
+android/local.properties
+
+# iOS
+ios/build/
+ios/Pods/
+ios/*.xcworkspace/xcuserdata/
+ios/*.xcodeproj/xcuserdata/
+*.xcscheme
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+*.iml
