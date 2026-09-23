@@ -34,6 +34,7 @@ class BridgeeSDKImpl {
   private provider: AnalyticsProvider | null = null;
   private emitter: NativeEventEmitter | null = null;
   private subscriptions: Array<{ remove: () => void }> = [];
+  private tenantFirstOpenEvent = '';
 
   async configure(options: ConfigureOptions): Promise<void> {
     if (!options || !options.provider) {
@@ -46,6 +47,7 @@ class BridgeeSDKImpl {
     this.teardownSubscriptions();
 
     this.provider = options.provider;
+    this.tenantFirstOpenEvent = `${options.tenantId.replace(/-/g, '_')}_first_open`;
     this.emitter = new NativeEventEmitter(NativeBridgeeSdk);
 
     this.subscriptions.push(
@@ -69,6 +71,8 @@ class BridgeeSDKImpl {
 
   private onNativeLogEvent = (payload: { name: string; params?: Record<string, unknown> }) => {
     if (!this.provider) return;
+    // Compatibilidade com versões nativas anteriores: first_open pertence ao Firebase.
+    if (payload.name === 'first_open' || payload.name === this.tenantFirstOpenEvent) return;
     try {
       this.provider.logEvent(payload.name, payload.params ?? {});
     } catch (_e) {
