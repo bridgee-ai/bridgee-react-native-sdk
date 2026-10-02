@@ -80,6 +80,13 @@ public class BridgeeSdk: RCTEventEmitter {
     }
   }
 
+  @objc
+  func getDeferredLink(_ resolve: RCTPromiseResolveBlock,
+                       reject: RCTPromiseRejectBlock) {
+    // Play Install Referrer has no iOS equivalent in this SDK.
+    resolve(nil)
+  }
+
   func emitLogEvent(name: String, parameters: [String: Any]?) {
     guard hasListeners else { return }
     sendEvent(
