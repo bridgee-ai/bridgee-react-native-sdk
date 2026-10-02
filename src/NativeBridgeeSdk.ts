@@ -8,6 +8,7 @@ export interface Spec extends TurboModule {
     utm_medium: string;
     utm_campaign: string;
   }>;
+  getDeferredLink(): Promise<string | null>;
   addListener(eventName: string): void;
   removeListeners(count: number): void;
 }
