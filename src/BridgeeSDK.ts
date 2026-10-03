@@ -98,6 +98,14 @@ class BridgeeSDKImpl {
     return NativeBridgeeSdk.firstOpen(matchBundle.toJSON());
   }
 
+  /** Policy-aware entry; no native request or campaign delivery when consent is denied or Google owns attribution. */
+  async firstOpenWithConsent(matchBundle: MatchBundle, policy: { consentGranted: boolean; preserveNativeGoogleAttribution: boolean }): Promise<UTMData> {
+    if (policy?.consentGranted !== true) throw new Error('attribution_consent_required');
+    if (typeof policy.preserveNativeGoogleAttribution !== 'boolean') throw new Error('native_google_policy_required');
+    if (policy.preserveNativeGoogleAttribution) return { utm_source: '', utm_medium: '', utm_campaign: '' };
+    return this.firstOpen(matchBundle);
+  }
+
   /**
    * Resolve a Play Install Referrer Blinklink to this app's configured App Link.
    * Returns null when unavailable or when either origin is outside the app's allowlists.

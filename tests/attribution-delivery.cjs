@@ -41,7 +41,12 @@ test('native first_open is suppressed while campaign delivery and callbacks are 
     logEvent: (name, params) => events.push({ name, params }),
     setUserProperty: (name, value) => properties.push({ name, value }),
   } });
-  assert.equal(await sdk.firstOpen({ toJSON: () => ({}) }), result);
+  await assert.rejects(sdk.firstOpenWithConsent({ toJSON: () => ({}) }, { consentGranted: false, preserveNativeGoogleAttribution: false }), /attribution_consent_required/);
+  const preserved = await sdk.firstOpenWithConsent({ toJSON: () => ({}) }, { consentGranted: true, preserveNativeGoogleAttribution: true });
+  assert.equal(preserved.utm_source, '');
+  assert.equal(events.length, 0);
+  assert.equal(properties.length, 0);
+  assert.equal(await sdk.firstOpenWithConsent({ toJSON: () => ({}) }, { consentGranted: true, preserveNativeGoogleAttribution: false }), result);
   assert.deepEqual(events.map(event => event.name), ['tenant_test_campaign_details', 'campaign_details']);
   assert.equal(events[1].params.utm_campaign, 'Launch+Summer');
   assert.deepEqual(properties, [{ name: 'install_source', value: 'TikTok' }]);
