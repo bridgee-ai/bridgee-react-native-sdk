@@ -426,3 +426,29 @@ adb logcat -s BRIDGEE-SDK
 ---
 
 **Desenvolvido com ❤️ pela equipe Bridgee.ai**
+
+## Measurement Lab: migração incremental
+
+Veja [delta implementado, dependências e critérios de aceite](docs/measurement-lab-migration.md).
+
+## Continuação Android após instalação via Blinklink
+
+Se o link publicado no dashboard usar fallback Google Play e tiver um Android App Link configurado, o dashboard coloca a URL pública canônica em `bridgee_link` no Play Install Referrer. Após instalar, o app pode obter o App Link já configurado naquele Blinklink:
+
+```ts
+const destination = await BridgeeSDK.getDeferredDestination({
+  blinklinkPrefixes: ['https://go.bridgee.app/tenda/'],
+  appLinkOrigins: ['https://app.example.com'],
+});
+if (destination) {
+  // destination.appLink é o destino configurado no dashboard.
+  // destination.blinklink identifica o conteúdo/slug para o roteador do app.
+  // Navegue uma vez, após inicializar o roteador.
+}
+```
+
+Os prefixos devem incluir a organização no domínio compartilhado e terminar em `/`; em domínio exclusivo, use a raiz `https://seu-dominio/`. As origens dos App Links devem ser exatas e sob controle do app. O retorno inclui a identidade do Blinklink para o roteador distinguir conteúdos que compartilham o mesmo App Link de template. O app precisa definir esse mapeamento de slug para tela; o SDK não deduz uma tela a partir de um URL web. O método retorna `null` quando o referrer, o link publicado ou o App Link não estão disponíveis ou não passam na validação. Ele não registra instalação nem muda `firstOpen()`, que continua retornando apenas UTMs. O app deve guardar que consumiu a navegação para evitar abrir a mesma tela em lançamentos futuros. iOS retorna `null`: não há transporte pós-instalação nesta versão. O fluxo depende de Google Play Install Referrer, associação Android App Links e teste físico de instalação; os testes locais validam apenas o contrato e a seleção segura.
+
+## Entrada com política explícita
+
+`BridgeeSDK.firstOpenWithConsent(bundle, { consentGranted, preserveNativeGoogleAttribution })` exige política explícita. Consentimento negado rejeita com `attribution_consent_required`; preservação Google resolve UTMs vazias sem chamada nativa. O método legado continua disponível. A guarda JS funciona com os pins nativos existentes, mas não substitui a gestão de consentimento do app nem garante idempotência persistente por instalação. Nenhum pacote novo foi publicado.
