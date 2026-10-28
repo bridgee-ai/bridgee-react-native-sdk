@@ -27,3 +27,11 @@ ios/*.xcodeproj/xcuserdata/
 .idea/
 .vscode/
 *.iml
+
+# Disposable native compile fixtures
+tests/native-android/.gradle/
+tests/native-ios/Pods/
+tests/native-ios/Podfile.lock
+tests/native-ios/*.xcodeproj/
+tests/native-ios/*.xcworkspace/
+tests/native-ios/build/

@@ -27,3 +27,24 @@ jobs:
         with:
           gradle-version: '7.6.4'
       - run: gradle -p tests/native-android :bridgeeSdk:assembleRelease --no-daemon --console=plain
+  ios-native:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+      - run: npm ci --ignore-scripts
+      - run: gem install cocoapods --version 1.16.2 --no-document
+      - run: ruby tests/native-ios/prepare.rb
+      - run: pod install --project-directory=tests/native-ios
+        env:
+          RCT_NEW_ARCH_ENABLED: '0'
+      - run: >-
+          xcodebuild -workspace tests/native-ios/BridgeeSdkCompile.xcworkspace
+          -scheme BridgeeSdkCompile -sdk iphonesimulator -configuration Debug
+          -derivedDataPath tests/native-ios/build CODE_SIGNING_ALLOWED=NO build
