@@ -1,0 +1,17 @@
+buildscript {
+  repositories { google(); mavenCentral() }
+  dependencies { classpath "com.android.tools.build:gradle:7.4.2" }
+}
+
+ext {
+  compileSdkVersion = 34
+  targetSdkVersion = 34
+}
+
+allprojects {
+  repositories { google(); mavenCentral() }
+  configurations.configureEach {
+    // Reproduce the published consumer pin without substituting an SDK stub.
+    resolutionStrategy.force "com.facebook.react:react-android:0.74.0"
+  }
+}

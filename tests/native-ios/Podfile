@@ -1,0 +1,19 @@
+require_relative '../../node_modules/react-native/scripts/react_native_pods'
+
+platform :ios, '14.0'
+prepare_react_native_project!
+
+target 'BridgeeSdkCompile' do
+  use_frameworks! :linkage => :static
+  use_react_native!(
+    :path => '../../node_modules/react-native',
+    :hermes_enabled => false,
+    :fabric_enabled => false,
+    :app_path => File.expand_path('../..', __dir__)
+  )
+  pod 'BridgeeReactNativeSdk', :path => '../..'
+
+  post_install do |installer|
+    react_native_post_install(installer, '../../node_modules/react-native', :mac_catalyst_enabled => false)
+  end
+end

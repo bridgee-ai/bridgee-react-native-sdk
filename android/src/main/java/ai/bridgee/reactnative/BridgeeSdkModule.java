@@ -1,6 +1,11 @@
 package ai.bridgee.reactnative;
 
+import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 import androidx.annotation.NonNull;
+import com.android.installreferrer.api.InstallReferrerClient;
+import com.android.installreferrer.api.InstallReferrerStateListener;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -13,6 +18,8 @@ import ai.bridgee.android.sdk.BridgeeSDK;
 import ai.bridgee.android.sdk.MatchBundle;
 import ai.bridgee.android.sdk.MatchResponse;
 import ai.bridgee.android.sdk.ResponseCallback;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BridgeeSdkModule extends ReactContextBaseJavaModule {
 
@@ -78,6 +85,62 @@ public class BridgeeSdkModule extends ReactContextBaseJavaModule {
       });
     } catch (Exception e) {
       promise.reject("BRIDGEE_FIRST_OPEN_ERROR", e.getMessage(), e);
+    }
+  }
+
+  @ReactMethod
+  public void getDeferredLink(Promise promise) {
+    InstallReferrerClient client = InstallReferrerClient.newBuilder(reactContext).build();
+    AtomicBoolean settled = new AtomicBoolean(false);
+    Handler handler = new Handler(Looper.getMainLooper());
+    Runnable timeout = () -> {
+      if (settled.compareAndSet(false, true)) {
+        promise.resolve(null);
+        client.endConnection();
+      }
+    };
+    handler.postDelayed(timeout, 3000);
+    try {
+      client.startConnection(new InstallReferrerStateListener() {
+        @Override
+        public void onInstallReferrerSetupFinished(int responseCode) {
+          if (!settled.compareAndSet(false, true)) return;
+          handler.removeCallbacks(timeout);
+          try {
+            if (responseCode != InstallReferrerClient.InstallReferrerResponse.OK) {
+              promise.resolve(null);
+              return;
+            }
+            String raw = client.getInstallReferrer().getInstallReferrer();
+            if (raw == null || raw.length() > 4096) {
+              promise.resolve(null);
+              return;
+            }
+            List<String> values = Uri.parse("https://bridgee.invalid/?" + raw)
+                .getQueryParameters("bridgee_link");
+            promise.resolve(values.size() == 1 ? values.get(0) : null);
+          } catch (Exception ignored) {
+            promise.resolve(null);
+          } finally {
+            client.endConnection();
+          }
+        }
+
+        @Override
+        public void onInstallReferrerServiceDisconnected() {
+          if (settled.compareAndSet(false, true)) {
+            handler.removeCallbacks(timeout);
+            promise.resolve(null);
+            client.endConnection();
+          }
+        }
+      });
+    } catch (Exception ignored) {
+      if (settled.compareAndSet(false, true)) {
+        handler.removeCallbacks(timeout);
+        client.endConnection();
+        promise.resolve(null);
+      }
     }
   }
 
