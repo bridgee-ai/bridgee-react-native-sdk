@@ -1,0 +1,3 @@
+rootProject.name = "BridgeeNativeCompile"
+include(":bridgeeSdk")
+project(":bridgeeSdk").projectDir = file("../../android")
