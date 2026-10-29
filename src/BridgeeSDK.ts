@@ -75,7 +75,7 @@ class BridgeeSDKImpl {
 
     this.teardownSubscriptions();
 
-    this.provider = options.provider;
+    this.provider = null;
     this.tenantFirstOpenEvent = `${options.tenantId.replace(/-/g, '_')}_first_open`;
     this.emitter = new NativeEventEmitter(NativeBridgeeSdk);
 
@@ -84,11 +84,18 @@ class BridgeeSDKImpl {
       this.emitter.addListener(EVENT_USER_PROPERTY, this.onNativeSetUserProperty),
     );
 
-    await NativeBridgeeSdk.configure(
-      options.tenantId,
-      options.tenantKey,
-      options.dryRun ?? false,
-    );
+    try {
+      await NativeBridgeeSdk.configure(
+        options.tenantId,
+        options.tenantKey,
+        options.dryRun ?? false,
+      );
+      this.provider = options.provider;
+    } catch (error) {
+      this.teardownSubscriptions();
+      this.tenantFirstOpenEvent = '';
+      throw error;
+    }
   }
 
   async firstOpen(matchBundle: MatchBundle): Promise<UTMData> {
