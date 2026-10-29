@@ -1,7 +1,13 @@
 # Identidade de instalação: revisão técnica de 29/10/2026
 
 Estado: especificação pendente de decisões; nenhuma migração ou API de install
-foi implantada por esta revisão. Não representa instalação única ou faturável.
+foi implantada por esta revisão. Não comprova unicidade de instalação.
+
+Premissa operacional informada pelo usuário: install faturável é o match na
+plataforma enviado ao GA4 do cliente. A ligação funcional match → GA4 é uma
+premissa desta revisão e não foi reaberta ou reauditada. As decisões abaixo
+tratam identidade, unicidade, reinstalação, reatribuição e reconciliação; não
+alteram esse critério comercial nem comprovam homologação física dos SDKs.
 
 ## O que o código implementa
 
@@ -40,7 +46,7 @@ controle quando pode chamá-las. Esses testes não testam um ledger inexistente.
 | Offline / falha de entrega | Definir fila persistente, TTL, backoff, limites e estados recebido/atribuído/entregue. Testar crash entre persistência e envio sem duplicar efeito. |
 | Consentimento revogado | Definir cancelamento de fila, retenção e eventual exclusão. Testar que não há nova transmissão depois da revogação. |
 | Orgânico / match ausente | Definir registro e possibilidade de atualização posterior. Resposta vazia/404 atual não significa ledger de install concluído. |
-| Cobrança | Definir evento elegível, unicidade, contestação e reconciliação separadamente. Nenhuma regra faturável foi criada nesta revisão. |
+| Cobrança | Preservar o critério informado: match na plataforma enviado ao GA4 do cliente. Definir unicidade, contestação e reconciliação diante de reenvio, reinstalação e reatribuição. Nenhuma regra comercial foi alterada nesta revisão. |
 
 Não fixar retenção, janela ou RPO por analogia com os recibos de clique de 48h.
 Também não guardar IDs no Keychain ou alterar backup do app antes de decidir a
