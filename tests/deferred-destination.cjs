@@ -4,20 +4,20 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const ts = require('typescript');
 
-function sdkFor(candidate, fetchImpl) {
+function sdkFor(candidate, fetchImpl, platform = 'android', timers = {}) {
   const source = fs.readFileSync('src/BridgeeSDK.ts', 'utf8');
   const { outputText } = ts.transpileModule(source, { compilerOptions: {
     module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020,
   } });
   const exports = {};
   vm.runInNewContext(outputText, {
-    exports, global: {}, URL, fetch: fetchImpl, AbortController, setTimeout, clearTimeout,
+    exports, global: {}, URL, fetch: fetchImpl, AbortController, setTimeout, clearTimeout, ...timers,
     require(name) {
       assert.equal(name, 'react-native');
       return {
         NativeEventEmitter: class {},
         NativeModules: { BridgeeSdk: { getDeferredLink: async () => candidate } },
-        Platform: { select: () => '' },
+        Platform: { OS: platform, select: () => '' },
       };
     },
   });
@@ -46,7 +46,7 @@ test('resolves a tenant-scoped Blinklink response to an allowed App Link', async
     blinklink: 'https://go.bridgee.app/tenda/offer',
     appLink: 'https://app.example.com/offer/123',
   });
-  assert.equal(fetched.url, 'https://dash.bridgee.app/api/public/deferred?link=https%3A%2F%2Fgo.bridgee.app%2Ftenda%2Foffer');
+  assert.equal(fetched.url, 'https://api.bridgee.ai/deferred?platform=android&link=https%3A%2F%2Fgo.bridgee.app%2Ftenda%2Foffer');
   assert.equal(fetched.init.headers.Accept, 'application/vnd.bridgee.deferred+json');
 });
 
@@ -79,4 +79,51 @@ test('treats missing Play referrer and non-protocol responses as unavailable', a
   assert.equal(await html.getDeferredDestination(options), null);
   const network = sdkFor('https://go.bridgee.app/tenda/offer', async () => { throw new Error('offline'); });
   assert.equal(await network.getDeferredDestination(options), null);
+});
+
+function success() {
+  return { ok: true, headers: { get: () => 'application/vnd.bridgee.deferred+json' },
+    json: async () => ({ link: 'https://go.bridgee.app/tenda/offer', appLink: 'https://app.example.com/offer' }) };
+}
+
+test('acknowledgement consumes a destination across SDK instances, lookup alone does not', async () => {
+  const items = new Map();
+  const storage = { getItem: async key => items.get(key) ?? null, setItem: async (key, value) => { items.set(key, value); } };
+  const sdk = sdkFor('https://go.bridgee.app/tenda/offer', async () => success());
+  const opts = { ...options, storage };
+  const pending = await sdk.getDeferredDestination(opts);
+  assert.ok(pending);
+  assert.ok(await sdk.getDeferredDestination(opts));
+  await sdk.acknowledgeDeferredDestination(pending, storage);
+  const restarted = sdkFor('https://go.bridgee.app/tenda/offer', async () => { throw new Error('must not fetch'); });
+  assert.equal(await restarted.getDeferredDestination(opts), null);
+});
+
+test('iOS resolves only an explicit continuation and selects its platform', async () => {
+  let fetched;
+  const sdk = sdkFor(null, async url => { fetched = url; return success(); }, 'ios');
+  assert.equal(await sdk.getDeferredDestination(options), null);
+  assert.equal(fetched, undefined);
+  assert.ok(await sdk.getDeferredDestination({ ...options, blinklink: 'https://go.bridgee.app/tenda/offer' }));
+  assert.ok(fetched.startsWith('https://api.bridgee.ai/deferred?platform=ios&'));
+});
+
+test('rejects redirects and source self-loops', async () => {
+  const redirected = sdkFor('https://go.bridgee.app/tenda/offer', async () => ({ ...success(), url: 'https://other.example/deferred' }));
+  assert.equal(await redirected.getDeferredDestination(options), null);
+  const loop = sdkFor('https://go.bridgee.app/tenda/offer', async () => ({ ...success(), json: async () => ({
+    link: 'https://go.bridgee.app/tenda/offer', appLink: 'https://go.bridgee.app/tenda/offer',
+  }) }));
+  assert.equal(await loop.getDeferredDestination({ ...options, appLinkOrigins: ['https://go.bridgee.app'] }), null);
+});
+
+test('bounds a stalled response body', async () => {
+  let timer;
+  const sdk = sdkFor('https://go.bridgee.app/tenda/offer', async () => ({ ...success(), json: () => new Promise(() => {}) }), 'android', {
+    setTimeout: fn => { timer = fn; return 123; }, clearTimeout: () => {},
+  });
+  const pending = sdk.getDeferredDestination(options);
+  await new Promise(resolve => setImmediate(resolve));
+  timer();
+  assert.equal(await pending, null);
 });

@@ -447,8 +447,46 @@ if (destination) {
 }
 ```
 
-Os prefixos devem incluir a organização no domínio compartilhado e terminar em `/`; em domínio exclusivo, use a raiz `https://seu-dominio/`. As origens dos App Links devem ser exatas e sob controle do app. O retorno inclui a identidade do Blinklink para o roteador distinguir conteúdos que compartilham o mesmo App Link de template. O app precisa definir esse mapeamento de slug para tela; o SDK não deduz uma tela a partir de um URL web. O método retorna `null` quando o referrer, o link publicado ou o App Link não estão disponíveis ou não passam na validação. Ele não registra instalação nem muda `firstOpen()`, que continua retornando apenas UTMs. O app deve guardar que consumiu a navegação para evitar abrir a mesma tela em lançamentos futuros. iOS retorna `null`: não há transporte pós-instalação nesta versão. O fluxo depende de Google Play Install Referrer, associação Android App Links e teste físico de instalação; os testes locais validam apenas o contrato e a seleção segura.
+Os prefixos devem incluir a organização no domínio compartilhado e terminar em `/`; em domínio exclusivo, use a raiz `https://seu-dominio/`. As origens dos App Links devem ser exatas e sob controle do app. O retorno inclui a identidade do Blinklink para o roteador distinguir conteúdos que compartilham o mesmo App Link de template. O app precisa definir esse mapeamento de slug para tela; o SDK não deduz uma tela a partir de um URL web. O método retorna `null` quando o referrer, o link publicado ou o App Link não estão disponíveis ou não passam na validação. Ele não registra instalação nem muda `firstOpen()`, que continua retornando apenas UTMs. Use `storage` e confirme com `acknowledgeDeferredDestination` apenas depois de navegar. iOS sem `blinklink` explícito retorna `null`: não há transporte automático pós-instalação nesta versão. O fluxo depende de Google Play Install Referrer, associação Android App Links e teste físico de instalação; os testes locais validam apenas o contrato e a seleção segura.
 
 ## Entrada com política explícita
 
 `BridgeeSDK.firstOpenWithConsent(bundle, { consentGranted, preserveNativeGoogleAttribution })` exige política explícita. Consentimento negado rejeita com `attribution_consent_required`; preservação Google resolve UTMs vazias sem chamada nativa. O método legado continua disponível. A guarda JS funciona com os pins nativos existentes, mas não substitui a gestão de consentimento do app nem garante idempotência persistente por instalação. Nenhum pacote novo foi publicado.
+
+
+### Deferred destination via Bridgee API (candidate, unpublished)
+
+The resolver now uses `GET https://api.bridgee.ai/deferred?platform=android|ios&link=...`.
+Deploy the updated Dashboard and API to a test environment first, setting
+`BRIDGEE_DEFERRED_ENABLED=true` and `BRIDGEE_DASHBOARD_URL` there. Production remains
+unchanged. `resolverOrigin` now refers to a staging **API**, using `/deferred`.
+The timeout covers the native read, storage, HTTP and body. Redirects and changed
+response origins are rejected. Resolution never calls `/match` or emits analytics.
+
+```ts
+import AsyncStorage from '@react-native-async-storage/async-storage'; // app-owned dependency
+
+// Invoke once after app navigation is ready; serialize calls in the host app.
+const destination = await BridgeeSDK.getDeferredDestination({
+  blinklinkPrefixes: ['https://go.bridgee.app/tenda/'], // replace with the actual published prefix
+  appLinkOrigins: ['https://app.example.com'], // replace with the app's verified origin
+  storage: AsyncStorage,
+});
+if (destination) {
+  // Map only supported paths to screens; validate IDs and require login when needed.
+  await routeToSupportedContent(destination.appLink); // app-provided function
+  await BridgeeSDK.acknowledgeDeferredDestination(destination, AsyncStorage);
+}
+```
+
+Keep the same durable storage in both calls. Failed lookups or failed navigation
+remain retriable. Without storage this is a repeatable lookup; it cannot guarantee
+once-per-install navigation. An OS backup may restore app-owned storage, so reinstall
+semantics must be tested by the host app. Do not acknowledge before login/content
+routing succeeds. A process crash between routing and acknowledgement can repeat it;
+the host router must handle that idempotently.
+
+On iOS an app-owned continuation may pass `blinklink` explicitly. The resolver selects
+the stored iOS Universal Link. This does **not** recover a first-launch destination
+from the App Store: that transport remains a separate implementation. Native Google
+campaign reporting is independent of this navigation feature.

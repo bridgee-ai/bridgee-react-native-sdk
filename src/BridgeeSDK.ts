@@ -10,12 +10,21 @@ type ConfigureOptions = {
   dryRun?: boolean;
 };
 
-type DeferredLinkOptions = {
+export type DeferredLinkStorage = {
+  getItem(key: string): Promise<string | null>;
+  setItem(key: string, value: string): Promise<void>;
+};
+
+export type DeferredLinkOptions = {
+  /** Explicit link from an app-owned continuation flow. Required on iOS; never inferred from IP. */
+  blinklink?: string;
+  /** App-owned durable storage (e.g. AsyncStorage). Use the same instance when acknowledging navigation. */
+  storage?: DeferredLinkStorage;
   /** Organization-scoped Blinklink URL prefixes, ending in / (e.g. https://go.bridgee.app/tenda/). */
   blinklinkPrefixes: string[];
   /** Exact HTTPS origins of App Links claimed by this app. */
   appLinkOrigins: string[];
-  /** Override only for a Bridgee-owned staging dashboard. */
+  /** Override only for a Bridgee-owned staging API. */
   resolverOrigin?: string;
 };
 
@@ -122,46 +131,64 @@ class BridgeeSDKImpl {
     if (!options?.blinklinkPrefixes?.length || !options?.appLinkOrigins?.length) {
       throw new Error('BridgeeSDK.getDeferredDestination requires Blinklink prefixes and App Link origins');
     }
+    const controller = new AbortController();
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
-      const candidate = await NativeBridgeeSdk.getDeferredLink();
-      const link = publicHttpsUrl(candidate);
-      if (!link || link.search || link.hash) return null;
-      const withinOrganization = options.blinklinkPrefixes.some((value) => {
-        const prefix = publicHttpsUrl(value);
-        return prefix && prefix.pathname.endsWith('/') && !prefix.search && !prefix.hash &&
-          link.origin === prefix.origin && link.pathname.startsWith(prefix.pathname);
-      });
-      if (!withinOrganization) return null;
-
-      const resolver = publicHttpsUrl(options.resolverOrigin ?? 'https://dash.bridgee.app');
-      if (!resolver || resolver.pathname !== '/' || resolver.search || resolver.hash) return null;
-
-      const endpoint = new URL('/api/public/deferred', resolver.toString());
-      endpoint.searchParams.set('link', link.toString());
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
-      let response: Response;
-      try {
-        response = await fetch(endpoint.toString(), {
-          headers: { Accept: DEFERRED_CONTENT_TYPE },
-          signal: controller.signal,
+      const resolve = async (): Promise<DeferredDestination | null> => {
+        const candidate = options.blinklink ?? (Platform.OS === 'ios' ? null : await NativeBridgeeSdk.getDeferredLink());
+        const link = publicHttpsUrl(candidate);
+        if (!link || link.search || link.hash) return null;
+        const withinOrganization = options.blinklinkPrefixes.some((value) => {
+          const prefix = publicHttpsUrl(value);
+          return prefix && prefix.pathname.endsWith('/') && !prefix.search && !prefix.hash &&
+            link.origin === prefix.origin && link.pathname.startsWith(prefix.pathname);
         });
-      } finally {
-        clearTimeout(timeout);
-      }
-      if (!response.ok || response.headers.get('content-type')?.split(';')[0] !== DEFERRED_CONTENT_TYPE)
-        return null;
-      const payload: unknown = await response.json();
-      if (typeof payload !== 'object' || !payload) return null;
-      const result = payload as { link?: unknown; appLink?: unknown };
-      const destination = publicHttpsUrl(result.appLink);
-      if (result.link !== link.toString() || !destination) return null;
-      return options.appLinkOrigins.includes(destination.origin)
-        ? { blinklink: link.toString(), appLink: destination.toString() }
-        : null;
+        if (!withinOrganization) return null;
+        const key = this.deferredStorageKey(link.toString());
+        if (options.storage && await options.storage.getItem(key) === 'consumed') return null;
+        if (controller.signal.aborted) return null;
+
+        const resolver = publicHttpsUrl(options.resolverOrigin ?? 'https://api.bridgee.ai');
+        if (!resolver || resolver.pathname !== '/' || resolver.search || resolver.hash) return null;
+        const endpoint = new URL('/deferred', resolver.toString());
+        endpoint.searchParams.set('platform', Platform.OS === 'ios' ? 'ios' : 'android');
+        endpoint.searchParams.set('link', link.toString());
+        const response = await fetch(endpoint.toString(), {
+          headers: { Accept: DEFERRED_CONTENT_TYPE }, signal: controller.signal,
+          redirect: 'error', credentials: 'omit',
+        });
+        if (!response.ok || (response.url && response.url !== endpoint.toString()) ||
+            response.headers.get('content-type')?.split(';')[0]?.trim().toLowerCase() !== DEFERRED_CONTENT_TYPE) return null;
+        const payload: unknown = await response.json();
+        if (controller.signal.aborted || typeof payload !== 'object' || !payload) return null;
+        const result = payload as { link?: unknown; appLink?: unknown };
+        const destination = publicHttpsUrl(result.appLink);
+        if (result.link !== link.toString() || !destination || destination.toString() === link.toString()) return null;
+        return options.appLinkOrigins.includes(destination.origin)
+          ? { blinklink: link.toString(), appLink: destination.toString() } : null;
+      };
+      // Bound native referrer, storage, HTTP headers AND response body. Aborting alone
+      // does not bound a native promise or a custom storage implementation.
+      return await Promise.race([
+        resolve(),
+        new Promise<null>((done) => { timeout = setTimeout(() => { controller.abort(); done(null); }, 8000); }),
+      ]);
     } catch {
       return null;
+    } finally {
+      if (timeout !== undefined) clearTimeout(timeout);
     }
+  }
+
+  /** Call only AFTER the app successfully routes to the destination. Failed/offline lookups stay retriable. */
+  async acknowledgeDeferredDestination(destination: DeferredDestination, storage: DeferredLinkStorage): Promise<void> {
+    const link = publicHttpsUrl(destination?.blinklink);
+    if (!link || link.search || link.hash || !storage) throw new Error('invalid_deferred_acknowledgement');
+    await storage.setItem(this.deferredStorageKey(link.toString()), 'consumed');
+  }
+
+  private deferredStorageKey(link: string): string {
+    return `bridgee:deferred:v1:${encodeURIComponent(link)}`;
   }
 
   private onNativeLogEvent = (payload: { name: string; params?: Record<string, unknown> }) => {
