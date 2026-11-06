@@ -18,6 +18,14 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run prepare
+      - uses: actions/upload-artifact@v4
+        with:
+          name: blink-deferred-react-native-js-candidate
+          path: |
+            lib/
+            plugin/build/
+          if-no-files-found: error
+          retention-days: 7
   android-native:
     runs-on: ubuntu-latest
     timeout-minutes: 15
