@@ -127,3 +127,51 @@ test('bounds a stalled response body', async () => {
   timer();
   assert.equal(await pending, null);
 });
+
+
+test('storage read failure does not fetch or consume, and a later attempt may retry', async () => {
+  let fail = true; let calls = 0;
+  const storage = { getItem: async () => { if (fail) throw new Error('storage unavailable'); return null; }, setItem: async () => {} };
+  const sdk = sdkFor('https://go.bridgee.app/tenda/offer', async () => { calls++; return success(); });
+  assert.equal(await sdk.getDeferredDestination({ ...options, storage }), null);
+  assert.equal(calls, 0);
+  fail = false;
+  assert.ok(await sdk.getDeferredDestination({ ...options, storage }));
+  assert.equal(calls, 1);
+});
+
+test('failed acknowledgement leaves navigation eligible for retry', async () => {
+  const storage = { getItem: async () => null, setItem: async () => { throw new Error('disk unavailable'); } };
+  const sdk = sdkFor('https://go.bridgee.app/tenda/offer', async () => success());
+  const destination = await sdk.getDeferredDestination({ ...options, storage });
+  assert.ok(destination);
+  await assert.rejects(sdk.acknowledgeDeferredDestination(destination, storage), /disk unavailable/);
+  assert.ok(await sdk.getDeferredDestination({ ...options, storage }));
+});
+
+test('bounds a stalled native referrer without making an HTTP request', async () => {
+  let timer; let calls = 0;
+  const sdk = sdkFor(new Promise(() => {}), async () => { calls++; return success(); }, 'android', {
+    setTimeout: fn => { timer = fn; return 123; }, clearTimeout: () => {},
+  });
+  const pending = sdk.getDeferredDestination(options);
+  await new Promise(resolve => setImmediate(resolve));
+  timer();
+  assert.equal(await pending, null);
+  assert.equal(calls, 0);
+});
+
+test('bounds stalled storage and never starts HTTP after that timeout', async () => {
+  let timer; let release; let calls = 0;
+  const storage = { getItem: () => new Promise(resolve => { release = resolve; }), setItem: async () => {} };
+  const sdk = sdkFor('https://go.bridgee.app/tenda/offer', async () => { calls++; return success(); }, 'android', {
+    setTimeout: fn => { timer = fn; return 123; }, clearTimeout: () => {},
+  });
+  const pending = sdk.getDeferredDestination({ ...options, storage });
+  await new Promise(resolve => setImmediate(resolve));
+  timer();
+  assert.equal(await pending, null);
+  release(null);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(calls, 0);
+});

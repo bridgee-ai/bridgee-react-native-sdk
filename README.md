@@ -1,3 +1,5 @@
+> Release preparation: React Native 0.2.0 is not published yet. Analytics delivery changes require migration; read [FIRST_OPEN_MIGRATION](docs/FIRST_OPEN_MIGRATION.md) and [release gates](RELEASE_CANDIDATE.md).
+
 # Bridgee React Native SDK
 
 [![npm](https://img.shields.io/npm/v/@bridgee-ai/react-native-sdk)](https://www.npmjs.com/package/@bridgee-ai/react-native-sdk)
