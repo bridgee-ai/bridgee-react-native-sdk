@@ -1,0 +1,21 @@
+--- a/android/build.gradle
++++ b/android/build.gradle
+@@ -60,6 +60,6 @@
+ 
+ dependencies {
+   implementation "com.facebook.react:react-android"
+-  implementation "ai.bridgee:bridgee-android-sdk:2.3.0"
++  implementation "ai.bridgee:bridgee-android-sdk:3.0.0"
+   implementation "com.android.installreferrer:installreferrer:2.2"
+ }
+--- a/BridgeeReactNativeSdk.podspec
++++ b/BridgeeReactNativeSdk.podspec
+@@ -16,7 +16,7 @@
+   s.source_files = "ios/**/*.{h,m,mm,swift}"
+   s.swift_version = "5.5"
+ 
+-  s.dependency "BridgeeAiSDK", "~> 1.1"
++  s.dependency "BridgeeAiSDK", "2.0.0"
+ 
+   install_modules_dependencies(s)
+ end
